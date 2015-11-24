@@ -13,23 +13,31 @@ import shutil
 import time
 import sys
 import os
+import pexpect
 
-def touch(fname, times=None):
-    with open(fname, 'a'):
-        os.utime(fname, times)
-
-def sh(command):
-    argv = command.split(' ')
-    p = subprocess.Popen(argv,stdin=subprocess.PIPE,stdout=sys.stdout,stderr=sys.stderr)
-    p.stdin.close()
-    p.wait()
-    return 
 
 class ImportAccount():
 
     def __init__(self):
         self.log = sys.stdout
+        self.notregistered = True
 
+    def touch(self, fname, times=None):
+        with open(fname, 'a'):
+           os.utime(fname, times)
+
+    def reguser(self, command):
+        argv = command.split(' ')
+        child = pexpect.spawn(command)
+        if self.notregistered:
+           self.notregistered = False
+           child.expect('[y/N]')
+           child.sendline('y\n')
+        child.expect(pexpect.EOF, timeout=None)
+        cmd_show_data =  child.before
+        cmd_output = cmd_show_data.split('\r\n')
+        for data in cmd_output:
+            print data
 
     def reg(self):
         with open("priv_genesis.key") as f:
@@ -37,9 +45,9 @@ class ImportAccount():
                fi = open('temp_pri.key','w')
                fi.write(line) 
                fi.close()
-               touch("password.txt")
-               outp = sh("geth --password password.txt account import temp_pri.key")
-
+               self.touch("password.txt")
+               self.reguser("geth --password password.txt account import temp_pri.key")
+               
 
 def main():
     node = ImportAccount()
