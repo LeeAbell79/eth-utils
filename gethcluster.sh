@@ -53,6 +53,7 @@ if [ ! -f "$root/nodes"  ]; then
     fi
   done
   echo "]" >> $root/nodes
+  sleep 10
 fi
 
 for ((i=0;i<N;++i)); do
