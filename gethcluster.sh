@@ -36,7 +36,7 @@ shift
 
 if [ ! -f "$root/nodes"  ]; then
 
-  echo "[" >> $root/nodes
+  echo "[" >  $root/nodes
   for ((i=0;i<N;++i)); do
     id=`printf "%02d" $i`
     if [ ! $ip_addr="" ]; then
@@ -48,13 +48,15 @@ if [ ! -f "$root/nodes"  ]; then
     cmd="$eth js <(echo 'console.log(admin.nodeInfo().NodeUrl); exit();') "
     echo $cmd
     bash -c "$cmd" 2>/dev/null |grep enode | perl -pe "s/\[\:\:\]/$ip_addr/g" | perl -pe "s/^/\"/; s/\s*$/\"/;" | tee >> $root/nodes
+    sleep 2
     if ((i<N-1)); then
       echo "," >> $root/nodes
     fi
   done
   echo "]" >> $root/nodes
-  sleep 10
 fi
+
+sleep 5
 
 for ((i=0;i<N;++i)); do
   id=`printf "%02d" $i`
@@ -63,4 +65,5 @@ for ((i=0;i<N;++i)); do
   cp $root/nodes $root/data/$id/static-nodes.json
   echo "launching node $i/$N ---> tail -f $root/$id.log"
   GETH=$GETH bash ./gethup.sh $root $id --networkid $network_id $* &
+  sleep 5
 done
