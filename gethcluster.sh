@@ -1,11 +1,11 @@
 # !/bin/bash
-# bash cluster <cluster_root> <number_of_nodes> <network_id> <runid> <local_IP> [[params]...]
+# bash cluster <root> <network_id> <number_of_nodes>  <runid> <local_IP> [[params]...]
 # https://github.com/ethereum/go-ethereum/wiki/Setting-up-monitoring-on-local-cluster
 
 # sets up a local ethereum network cluster of nodes
-# - <n> is the number of clusters
+# - <number_of_nodes> is the number of nodes in cluster
 # - <root> is the root directory for the cluster, the nodes are set up
-#   with datadir `<root>/00`, `<root>/01`, ...
+#   with datadir `<root>/<network_id>/00`, `<root>/ <network_id>/01`, ...
 # - new accounts are created for each node
 # - they launch on port 30300, 30301, ...
 # - they star rpc on port 8100, 8101, ...
@@ -23,20 +23,22 @@
 
 
 root=$1
-mkdir -p $root/data
-shift
-N=$1
 shift
 network_id=$1
+dir=$root/$network_id
+mkdir -p $dir/data
+mkdir -p $dir/log
+shift
+N=$1
 shift
 ip_addr=$1
 shift
 
 # GETH=geth
 
-if [ ! -f "$root/nodes"  ]; then
+if [ ! -f "$dir/nodes"  ]; then
 
-  echo "[" >  $root/nodes
+  echo "[" >> $dir/nodes
   for ((i=0;i<N;++i)); do
     id=`printf "%02d" $i`
     if [ ! $ip_addr="" ]; then
@@ -44,26 +46,27 @@ if [ ! -f "$root/nodes"  ]; then
     fi
 
     echo "getting enode for instance $id ($i/$N)"
-    eth="$GETH --datadir $root/data/$id --port 303$id --networkid $network_id"
-    cmd="$eth js <(echo 'console.log(admin.nodeInfo().NodeUrl); exit();') "
+    eth="$GETH --datadir $dir/data/$id --port 303$id --networkid $network_id"
+    cmd="$eth js <(echo 'console.log(admin.nodeInfo.enode); exit;') "
     echo $cmd
-    bash -c "$cmd" 2>/dev/null |grep enode | perl -pe "s/\[\:\:\]/$ip_addr/g" | perl -pe "s/^/\"/; s/\s*$/\"/;" | tee >> $root/nodes
-    sleep 2
+    bash -c "$cmd" 2>/dev/null |grep enode | perl -pe "s/\[\:\:\]/$ip_addr/g" | perl -pe "s/^/\"/; s/\s*$/\"/;" >> $dir/nodes &
+    sleep 30
+    pkill geth
+    sleep 10
     if ((i<N-1)); then
-      echo "," >> $root/nodes
+      echo "," >> $dir/nodes
     fi
   done
-  echo "]" >> $root/nodes
+  echo "]" >> $dir/nodes
 fi
-
-sleep 5
 
 for ((i=0;i<N;++i)); do
   id=`printf "%02d" $i`
-  echo "copy $root/data/$id/static-nodes.json"
-  mkdir -p $root/data/$id
-  cp $root/nodes $root/data/$id/static-nodes.json
-  echo "launching node $i/$N ---> tail -f $root/$id.log"
-  GETH=$GETH bash ./gethup.sh $root $id --networkid $network_id $* &
-  sleep 5
+  echo "copy $dir/data/$id/static-nodes.json"
+  mkdir -p $dir/data/$id
+  cp $dir/nodes $dir/data/$id/static-nodes.json
+  echo "launching node $i/$N ---> tail-f $dir/log/$id.log"
+  echo GETH=$GETH bash ./gethup.sh $dir $id --networkid $network_id $*
+  GETH=$GETH bash ./gethup.sh $dir $id --networkid $network_id $* 
+  sleep 10
 done
