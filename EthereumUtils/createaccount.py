@@ -43,7 +43,7 @@ class ImportAccount():
             print 'Creating ' + data
 
     def reg(self, arg):
-        with open("priv_genesis.key") as f:
+        with open("EthereumUtils/priv_genesis.key") as f:
             for line in f:
                fi = open('temp_pri.key','w')
                fi.write(line) 
