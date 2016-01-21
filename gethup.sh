@@ -38,6 +38,7 @@ if [ ! -d "$root/keystore/$dd" ]; then
   # datadir
   # this way you can safely clear the data directory and still keep your key
   # under `<rootdir>/keystore/dd
+  python EthereumUtils/createaccount.py --datadir $datadir
 
   cp -R "$datadir/keystore" $root/keystore/$dd
 fi
