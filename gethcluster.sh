@@ -68,5 +68,5 @@ for ((i=0;i<N;++i)); do
   echo "launching node $i/$N ---> tail-f $dir/log/$id.log"
   echo GETH=$GETH bash ./gethup.sh $dir $id --networkid $network_id $*
   GETH=$GETH bash ./gethup.sh $dir $id --networkid $network_id $* 
-  sleep 10
+  sleep 20
 done
